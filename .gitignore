@@ -1,0 +1,77 @@
+# ========== Unity Generated Files ==========
+[Ll]ibrary/
+[Tt]emp/
+[Bb]uild/
+[Bb]uilds/
+[Oo]bj/
+[Mm]emoryCaptures/
+
+# ========== Unity Cache / Logs / Crashes ==========
+sysinfo.txt
+*.stacktrace
+*.log
+*.bak
+*.tmp
+
+# ========== User Settings ==========
+*.pidb
+*.suo
+*.user
+*.userprefs
+*.csproj
+*.unityproj
+*.sln
+*.sln.*
+*.vbproj
+*.tmproj
+
+# VSCode
+.vscode/
+
+# Rider
+.idea/
+*.sln.iml
+
+# JetBrains Rider Unity plugin
+.idea/
+.idea/*
+
+# ========== OS Specific ==========
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========== Unity Asset Store Tools ==========
+/Assets/AssetStoreTools*
+
+# ========== Auto-generated from Unity ==========
+*.booproj
+*.svd
+*.pdb
+*.mdb
+
+# ========== Crash Reports ==========
+*.dmp
+*.diag
+*.prefab.unityproj
+
+# ========== Builds (Optional) ==========
+# Comment this out if you want to track build files
+Build/
+Builds/
+
+# ========== Addressables / Cache (Optional) ==========
+/Assets/AddressableAssetsData/*.bin
+/Assets/AddressableAssetsData/*.json
+
+# ========== Collaborate Cache ==========
+.collab/
+
+# ========== Visual Studio Code Workspace Settings (Optional) ==========
+*.code-workspace
+
+# ========== Unity Cloud Diagnostics ==========
+/*.cloudDiagnostics/
+
+# ========== Unity Shader Cache ==========
+/Assets/StreamingAssets/aa.meta
