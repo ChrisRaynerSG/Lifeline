@@ -190,6 +190,15 @@ public class MapController : MonoBehaviour
                 }
             }
         }
+        // Deactivate the walls on the current floor and activate the walls on the next floor
+        for(int i = 0; i < builtWalls.Count; i++){
+            if(builtWalls[i].transform.position.y == currentFloor*3+1.5f){
+                builtWalls[i].SetActive(false); // Deactivate the wall if it's on the current layer
+            }
+            else if(builtWalls[i].transform.position.y == nextFloor*3+1.5f){
+                builtWalls[i].SetActive(true); // Activate the wall if it's on the next layer
+            }
+        }
     }
 
     // methods for the build grid, should these be in a separate class? ie a BuildGridController?
