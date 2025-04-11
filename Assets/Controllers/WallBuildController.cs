@@ -15,7 +15,8 @@ public class WallBuildController : MonoBehaviour
     public TextMeshProUGUI wallCostUiElement; // UI element to display the wall cost will calculate the cost of the wall based on the size of the wall and will update the UI element with the cost in real-time
     private bool isBuildingWall = false;
     private bool isWallBuildSelected = false;
-    private bool isWallDeleteSelected = false;
+    private bool isWallDeleteSelected = false; // Flag to check if wall delete mode is selected without holding control
+    private bool isWallDeleteNonControlSelected = false; 
     private bool corner1Set = false; // flag to check if the first corner is set so we can display the wall blueprint
     private Vector3 corner1;
     private Vector3 corner2;
@@ -77,6 +78,14 @@ public class WallBuildController : MonoBehaviour
         corner1Set = false;
         corner1 = Vector3.zero; // Reset the first corner to zero
         corner2 = Vector3.zero; // Reset the second corner to zero
+    }
+
+    public void StartDeleteWall(){
+
+    }
+
+    public void FinishDeleteWall(){
+
     }
 
     private Vector3 SetClosestCorner()
@@ -171,6 +180,21 @@ public class WallBuildController : MonoBehaviour
             }else{
                 FinishBuildWall(); // Finish building the wall if the first corner is set
             }
+        }
+
+        if(Input.GetMouseButtonUp(0) && (isWallDeleteSelected || isWallDeleteNonControlSelected)){
+            if (EventSystem.current.IsPointerOverGameObject())
+            {
+                // Ignore clicks on UI elements
+            }
+            else if(!corner1Set){
+                StartDeleteWall();
+            }
+            else{
+                FinishDeleteWall();
+            }
+            
+            
         }
 
         if(!corner1Set && isWallBuildSelected){
