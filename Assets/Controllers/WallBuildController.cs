@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class WallBuildController : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class WallBuildController : MonoBehaviour
     public TextMeshProUGUI wallCostUiElement; // UI element to display the wall cost will calculate the cost of the wall based on the size of the wall and will update the UI element with the cost in real-time
     private bool isBuildingWall = false;
     private bool isWallBuildSelected = false;
+    private bool isWallDeleteSelected = false;
     private bool corner1Set = false; // flag to check if the first corner is set so we can display the wall blueprint
     private Vector3 corner1;
     private Vector3 corner2;
@@ -136,6 +138,17 @@ public class WallBuildController : MonoBehaviour
                 Destroy(wallBlueprint); // Destroy the wall blueprint object
             }
         }
+
+        if(isWallBuildSelected){
+            if(Input.GetKeyDown(KeyCode.LeftControl)){
+                // change wall build mode to delete mode
+                if(!isWallDeleteSelected){
+                    isWallDeleteSelected = true; // Set the flag to indicate that we are in wall delete mode
+                    isWallBuildSelected = false; // Reset the wall build mode flag
+                    wallBlueprint.GetComponent<MeshRenderer>().material.color = Color.red; // Change the color of the wall blueprint to red
+                }
+            }
+        }
         
         // build a wall when the left mouse button is clicked
         if(Input.GetMouseButtonUp(0) && isWallBuildSelected){
@@ -205,6 +218,11 @@ public class WallBuildController : MonoBehaviour
             Destroy(wallBlueprint); // Destroy the wall blueprint object when exiting wall build mode
             corner1Set = false; // Reset the corner set flag when exiting wall build mode
         }
+    }
+
+    public void ToggleWallDeleteMode(){
+        isWallBuildSelected = false;
+
     }
 
     private void SetupWallBlueprint(){
