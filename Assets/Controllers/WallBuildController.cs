@@ -1,3 +1,4 @@
+using NUnit.Framework;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -147,6 +148,15 @@ public class WallBuildController : MonoBehaviour
                     isWallBuildSelected = false; // Reset the wall build mode flag
                     wallBlueprint.GetComponent<MeshRenderer>().material.color = Color.red; // Change the color of the wall blueprint to red
                 }
+            }
+        }
+
+        if(isWallDeleteSelected){
+            if(Input.GetKeyUp(KeyCode.LeftControl)){
+                // change wall build mode to build mode upon key release
+                isWallDeleteSelected = false; // Reset the wall delete mode flag
+                isWallBuildSelected = true; // Set the flag to indicate that we are in wall build mode
+                wallBlueprint.GetComponent<MeshRenderer>().material.color = Color.blue; // Change the color of the wall blueprint to blue
             }
         }
         
