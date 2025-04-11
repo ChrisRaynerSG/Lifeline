@@ -1,8 +1,7 @@
-using NUnit.Framework;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
+
 
 public class WallBuildController : MonoBehaviour
 {
@@ -36,10 +35,7 @@ public class WallBuildController : MonoBehaviour
         isBuildingWall = true; // Set the flag to indicate that we are building a wall
         corner1Set = true; // Set the flag to indicate that the first corner is set
         wallBlueprint.transform.localScale = new Vector3(0.15f, 3f, 0.15f);
-        wallBlueprint.transform.position = corner1; // Set the position of the wall blueprint to the first corner
-        Vector3 raisedPosition = wallBlueprint.transform.position;
-        raisedPosition.y += 1.5f; // Adjust the Y-coordinate to raise the wall
-        wallBlueprint.transform.position = raisedPosition;
+        wallBlueprint.transform.position = AdjustHeight(corner1); // Set the position of the wall blueprint to the first corner
         
         wallBlueprint.GetComponent<MeshRenderer>().material.color = Color.blue; // Set the scale of the wall blueprint
         // moneyController.SubtractMoney(CalculateTotalWallCost(CalculateWallLength(corner1,corner2),10f)); // Subtract money for building the wall
@@ -57,13 +53,9 @@ public class WallBuildController : MonoBehaviour
         float wallLength = CalculateWallLength(corner1, corner2); // Calculate the length of the wall
         float totalCost = CalculateTotalWallCost(wallLength, 10f); // Calculate the total cost of the wall
         moneyController.SubtractMoney(totalCost); // Subtract money for building the wall
-        GameObject wall = Instantiate(wallPrefab, (corner1 + corner2) / 2, Quaternion.identity); // Instantiate the wall prefab at the midpoint between the two corners
+        GameObject wall = Instantiate(wallPrefab, AdjustHeight((corner1 + corner2) / 2), Quaternion.identity); // Instantiate the wall prefab at the midpoint between the two corners
         wall.transform.localScale = new Vector3(0.15f, 3f, wallLength); // Set the scale of the wall based on its length
         wall.transform.rotation = Quaternion.LookRotation(direction);
-
-        Vector3 raisedPosition = wall.transform.position;
-        raisedPosition.y += 1.5f; // Adjust the Y-coordinate to raise the wall
-        wall.transform.position = raisedPosition;
 
         WallController wc = wall.AddComponent<WallController>();
         wc.Initialise(wall.transform.localScale.z, wall.transform.position, wall.transform.rotation.eulerAngles); // Initialize the WallController with the wall's length, position, and rotation
@@ -197,8 +189,9 @@ public class WallBuildController : MonoBehaviour
             
         }
 
-        if(!corner1Set && isWallBuildSelected){
-            wallBlueprint.transform.position = SetClosestCorner(); // Set the position of the wall blueprint to the hovered tile    
+        // update wall blueprint position to follow mouse before wall is started to be built or deleted
+        if(!corner1Set && (isWallBuildSelected || isWallDeleteSelected)){
+            wallBlueprint.transform.position = AdjustHeight(SetClosestCorner()); // Set the position of the wall blueprint to the hovered tile    
              // Set the scale of the wall blueprint
         }
 
@@ -231,13 +224,13 @@ public class WallBuildController : MonoBehaviour
         {
             // Update the position, rotation, and scale of the blueprint
             Vector3 direction = corner2 - corner1;
-            wallBlueprint.transform.position = (corner1 + corner2) / 2;
+            wallBlueprint.transform.position = AdjustHeight((corner1 + corner2) / 2);
             wallBlueprint.transform.localScale = new Vector3(0.15f, 3f, wallLength);
             wallBlueprint.transform.rotation = Quaternion.LookRotation(direction);
         }
         else if (wallBlueprint != null)
         {
-            wallBlueprint.transform.position = SetClosestCorner(); // Set the position of the wall blueprint to the first corner
+            wallBlueprint.transform.position = AdjustHeight(SetClosestCorner());
         }
     }
 
@@ -267,5 +260,11 @@ public class WallBuildController : MonoBehaviour
             wallBlueprint.GetComponent<MeshRenderer>().material.color = Color.blue; // Set the color of the wall blueprint to blue
         }
         wallBlueprint.transform.position = SetClosestCorner();
+    }
+
+    private Vector3 AdjustHeight(Vector3 position){
+        Vector3 heightAdjust = position;
+        heightAdjust.y += 1.5f; // Adjust the Y-coordinate to raise the wall
+        return heightAdjust;
     }
 }
