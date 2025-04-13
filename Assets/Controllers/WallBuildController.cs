@@ -54,8 +54,8 @@ public class WallBuildController : MonoBehaviour
 
         Vector3 direction = GameVectorMathUtils.CalculateDirection(corner2,corner1); // Calculate the direction vector between the two corners
         float wallLength = CalculateWallLength(corner1, corner2); // Calculate the length of the wall
-        
-        List<GameObject> sameDirectionWalls = WallsFacingSameDirection(direction); // Get all walls facing the same direction as the new wall
+
+        List<GameObject> sameDirectionWalls = WallsFacingSameDirection(direction, corner2.y + 1.5f); // Get all walls facing the same direction as the new wall
         
         GameVectorMathUtils.MergeColinearWalls(corner1, corner2, sameDirectionWalls, out Vector3 newStart, out Vector3 newEnd, out List<GameObject> overlappingWalls); // Merge collinear walls if they overlap
         foreach(GameObject existingWall in overlappingWalls){
@@ -225,7 +225,7 @@ public class WallBuildController : MonoBehaviour
                 return; // Exit the method if no tile is hovered
             }
             float wallLength = CalculateWallLength(corner1, corner2);
-            List<GameObject> overlappingWalls = WallsFacingSameDirection(GameVectorMathUtils.CalculateDirection(corner1,corner2));
+            List<GameObject> overlappingWalls = WallsFacingSameDirection(GameVectorMathUtils.CalculateDirection(corner1,corner2), corner2.y + 1.5f); // Get all walls facing the same direction as the new wall
             float uniqueLength = CalculateUniqueWallLength(corner1, corner2, overlappingWalls); // Calculate the length of the wall
             float totalCost = CalculateTotalWallCost(uniqueLength, 10f);
             UpdateBlueprintPosition(wallLength); // Calculate the total cost of the wall
@@ -296,11 +296,11 @@ public class WallBuildController : MonoBehaviour
     //maybe these should be in a VectorMath utility class? 
 
     // Get all walls facing the same direction as the given direction so we can delete them if they intersect with the new wall, maybe even use this to merge walls
-    private List<GameObject> WallsFacingSameDirection(Vector3 direction){
+    private List<GameObject> WallsFacingSameDirection(Vector3 direction, float height){
         List<GameObject> walls = new List<GameObject>();
         foreach(GameObject wall in mapController.builtWalls){
             WallController wc = wall.GetComponent<WallController>();
-            if(wc != null && GameVectorMathUtils.VectorsAreParallel(wc.WallData.Direction, direction)){
+            if(wc != null && GameVectorMathUtils.VectorsAreParallel(wc.WallData.Direction, direction) && wc.WallData.Position.y == height){
                 walls.Add(wall); // Add the wall to the list if it is facing the same direction
             }
         }
