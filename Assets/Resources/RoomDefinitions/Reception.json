@@ -1,0 +1,11 @@
+{
+  "id": "Reception",
+  "name": "Reception",
+  "minSize": {
+    "x": 5,
+    "y": 5
+  },
+  "requiredItems": ["reception_desk", "reception_chair", "computer"],
+  "optionalItems": ["reception_plant", "reception_painting", "reception_clock"],
+  "roomType": "administrative"
+}
