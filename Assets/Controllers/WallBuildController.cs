@@ -373,44 +373,53 @@ public class WallBuildController : MonoBehaviour
 
         float totalLength = Vector3.Distance(newStart, newEnd); // Calculate the total length of the new wall
         float uniqueLength = Mathf.Max(0, totalLength - CalculateOverlapLength(newStart, newEnd, existingWalls)); // Calculate the unique length of the new wall
-        Debug.Log($"Unique Length: {uniqueLength}"); // Log the unique length for debugging purposes
-         // Calculate the unique length of the new wall
         return uniqueLength; // Return the unique length of the new wall
     }
 
     private void TrimWallToExcludeSegment(Vector3 cornerA, Vector3 cornerB, GameObject wallToTrim){
-        if(wallToTrim == null){
-            return; // Exit the method if the wall to trim is null
-        }
+        if (wallToTrim == null) return;
 
-        WallDataModel wallData = wallToTrim.GetComponent<WallController>().WallData; // Get the WallDataModel component from the wall to trim
+        WallDataModel wallData = wallToTrim.GetComponent<WallController>().WallData;
 
-        Vector3 start = wallData.PointA; // Get the start point of the wall to trim
-        Vector3 end = wallData.PointB; // Get the end point of the wall to trim
-        Vector3 wallDirection = GameVectorMathUtils.CalculateDirection(end, start); // Calculate the direction of the wall to trim
+        Vector3 start = wallData.PointA;
+        Vector3 end = wallData.PointB;
 
-        float wallStartScalar = 0f; // start - start
-        float wallEndScalar = Vector3.Dot(wallDirection, end - start);
-        float deleteStartScalar = Vector3.Dot(wallDirection, cornerA - start);
-        float deleteEndScalar = Vector3.Dot(wallDirection, cornerB - start);
+        Vector3 wallDirection = (end - start).normalized;
+        float wallLength = Vector3.Distance(start, end);
 
-        if(wallStartScalar > wallEndScalar)(wallStartScalar, wallEndScalar) = (wallEndScalar, wallStartScalar); // Ensure wallStartScalar is less than wallEndScalar
-        if(deleteStartScalar > deleteEndScalar)(deleteStartScalar, deleteEndScalar) = (deleteEndScalar, deleteStartScalar); // Ensure deleteStartScalar is less than deleteEndScalar
+        // Project cornerA and cornerB onto the wall line
+        float aAlong = Vector3.Dot(cornerA - start, wallDirection);
+        float bAlong = Vector3.Dot(cornerB - start, wallDirection);
 
-        if(deleteStartScalar <= wallStartScalar && deleteEndScalar >= wallEndScalar){
-            return; // No new wall is created if the wall to trim is completely within the delete segment
-        }
+        float deleteStart = Mathf.Min(aAlong, bAlong);
+        float deleteEnd = Mathf.Max(aAlong, bAlong);
 
-        if(deleteStartScalar > wallStartScalar){
+        // Clamp delete segment within wall segment
+        deleteStart = Mathf.Clamp(deleteStart, 0, wallLength);
+        deleteEnd = Mathf.Clamp(deleteEnd, 0, wallLength);
+
+        // If delete covers entire wall, exit early
+        if (Mathf.Approximately(deleteStart, 0) && Mathf.Approximately(deleteEnd, wallLength))
+            return;
+
+        // Create new wall segment before deleted section
+        if (deleteStart > 0)
+        {
             Vector3 newStart = start;
-            Vector3 newEnd = start + wallDirection * (deleteStartScalar - wallStartScalar); // Calculate the new end point of the wall to trim
-            CreateWall(newStart, newEnd); // Create a new wall with the updated start and end points
+            Vector3 newEnd = start + wallDirection * deleteStart;
+            newStart.y = newStart.y - 1.5f; // Adjust height for the new start point
+            newEnd.y = newEnd.y - 1.5f; // Adjust height for the new end point
+            CreateWall(newStart, newEnd);
         }
 
-        if(deleteEndScalar < wallEndScalar){
-            Vector3 newStart = start + wallDirection * (deleteEndScalar - wallStartScalar); // Calculate the new start point of the wall to trim
+        // Create new wall segment after deleted section
+        if (deleteEnd < wallLength)
+        {
+            Vector3 newStart = start + wallDirection * deleteEnd;
             Vector3 newEnd = end;
-            CreateWall(newStart, newEnd); // Create a new wall with the updated start and end points
+            newEnd.y = newEnd.y - 1.5f; // Adjust height for the new end point
+            newStart.y = newStart.y - 1.5f; // Adjust height for the new start point
+            CreateWall(newStart, newEnd);
         }
     }
 
