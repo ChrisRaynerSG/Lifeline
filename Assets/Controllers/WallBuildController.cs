@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -20,6 +18,12 @@ public class WallBuildController : MonoBehaviour
     private bool isWallDeleteSelected = false; // Flag to check if wall delete mode is selected without holding control
     private bool isWallDeleteNonControlSelected = false; 
     private bool corner1Set = false; // flag to check if the first corner is set so we can display the wall blueprint
+    
+    //change these two values based on the game difficulty?
+    public float wallCost = 10f;
+    public float wallReimbursement = 5f;
+
+    // refers to the two corners of the wall being built
     private Vector3 corner1;
     private Vector3 corner2;
 
@@ -27,7 +31,7 @@ public class WallBuildController : MonoBehaviour
 
     private GameObject wallBlueprint; // Reference to the wall blueprint object
 
-    public void StartBuildWall(){
+    public void StartBuildOrDeleteWall(){
         if(!isWallBuildSelected){
             return; // Exit the method if wall build mode is not selected
         }
@@ -56,14 +60,10 @@ public class WallBuildController : MonoBehaviour
         float wallLength = CalculateWallLength(corner1, corner2); // Calculate the length of the wall
 
         List<GameObject> sameDirectionWalls = WallsFacingSameDirection(direction, corner2.y + 1.5f); // Get all walls facing the same direction as the new wall
-        
-        GameVectorMathUtils.MergeColinearWalls(corner1, corner2, sameDirectionWalls, out Vector3 newStart, out Vector3 newEnd, out List<GameObject> overlappingWalls); // Merge collinear walls if they overlap
-        foreach(GameObject existingWall in overlappingWalls){
-            Destroy(existingWall); // Destroy the overlapping walls
-            mapController.RemoveWall(existingWall); // Remove the overlapping walls from the map controller's list of walls
-        }
 
-        float totalCost = CalculateTotalWallCost(CalculateUniqueWallLength(newStart,newEnd,overlappingWalls), 10f);
+        GameVectorMathUtils.MergeColinearWalls(corner1, corner2, sameDirectionWalls, out Vector3 newStart, out Vector3 newEnd, out List<GameObject> overlappingWalls); // Merge collinear walls if they overlap
+        
+        float totalCost = CalculateTotalWallCost(CalculateUniqueWallLength(newStart,newEnd,overlappingWalls), wallCost);
         
         if(totalCost > moneyController.CurrentMoney){
             return; // Exit the method if not enough money to build the wall
@@ -71,19 +71,14 @@ public class WallBuildController : MonoBehaviour
 
         // Calculate the total cost of the wall
         moneyController.SubtractMoney(totalCost); 
-    
-        Vector3 mergedDirection = GameVectorMathUtils.CalculateDirection(newEnd, newStart);
-        float mergedLength = CalculateWallLength(newStart, newEnd); // Calculate the length of the merged wall
-        Vector3 mergedMidpoint = (newStart + newEnd) / 2; // Calculate the midpoint of the merged wall
+        
+        foreach(GameObject existingWall in overlappingWalls){
+            Destroy(existingWall); // Destroy the overlapping walls
+            mapController.RemoveWall(existingWall); // Remove the overlapping walls from the map controller's list of walls
+        }
 
         // Create the new wall with the updated start and end points
-        GameObject wall = Instantiate(wallPrefab, AdjustHeight(mergedMidpoint), Quaternion.LookRotation(mergedDirection)); // Instantiate the wall prefab at the midpoint between the two corners
-        wall.transform.localScale = new Vector3(0.15f, 3f, mergedLength); // Set the scale of the wall based on its length
-        wall.transform.rotation = Quaternion.LookRotation(mergedDirection);
-        WallController wc = wall.AddComponent<WallController>();
-        wc.Initialise(wall.transform.localScale.z, wall.transform.position, wall.transform.rotation.eulerAngles);
-
-        mapController.AddWall(wall); // Add the wall to the map controller's list of walls
+        CreateWall(newStart, newEnd); // Create the new wall with the updated start and end points
         isBuildingWall = false; // Reset the flag to indicate that we are no longer building a wall
         
         //Clean up after wall is built
@@ -95,12 +90,48 @@ public class WallBuildController : MonoBehaviour
         corner2 = Vector3.zero; // Reset the second corner to zero
     }
 
-    public void StartDeleteWall(){
-
-    }
-
     public void FinishDeleteWall(){
 
+        if(!corner1Set || !isWallDeleteSelected){
+            return;
+        }
+        corner2 = SetClosestCorner(); // Get the second corner for the deleted wall
+        if(corner2 == Vector3.zero){
+            return; // Exit the method if no tile is hovered
+        }
+
+        Vector3 direction = GameVectorMathUtils.CalculateDirection(corner2,corner1); // Calculate the direction vector between the two corners
+
+        List<GameObject> sameDirectionWalls = WallsFacingSameDirection(direction, corner2.y + 1.5f); // Get all walls facing the same direction as the new wall
+        if(sameDirectionWalls.Count == 0){
+            return; // Exit the method if no walls facing the same direction are found cant delete walls if they dont exist
+        }
+        GameObject wallToDelete = null;
+        foreach(GameObject wall in sameDirectionWalls){
+            WallController wc = wall.GetComponent<WallController>();
+            if(wc != null && GameVectorMathUtils.AreColinearAndOverlap(corner1, corner2, wc.WallData.PointA, wc.WallData.PointB)){
+                wallToDelete = wall; // Set the wall to delete to the one that overlaps with the new wall
+                break;
+            }
+        }
+
+        if(wallToDelete == null || CalculateOverlapLength(corner1, corner2, sameDirectionWalls) == 0){
+            return; // Exit the method if no wall to delete is found or there is no overlap
+        }
+
+        moneyController.AddMoney(CalculateTotalWallCost(CalculateOverlapLength(corner1, corner2, sameDirectionWalls), wallReimbursement)); // Add money for deleting the wall 5f per unit length so half the cost of building a wall
+        TrimWallToExcludeSegment(corner1, corner2, wallToDelete); // Calculate the new walls from the deleted wall
+        
+        mapController.RemoveWall(wallToDelete); 
+        Destroy(wallToDelete); // Destroy the wall to delete
+
+        isBuildingWall = false;
+
+        wallBlueprint.transform.localScale = new Vector3(0.15f, 3f, 0.15f); 
+
+        corner1Set = false;
+        corner1 = Vector3.zero; // Reset the first corner to zero
+        corner2 = Vector3.zero; // Reset the second corner to zero
     }
 
     private Vector3 SetClosestCorner()
@@ -183,15 +214,15 @@ public class WallBuildController : MonoBehaviour
                 wallBlueprint.GetComponent<MeshRenderer>().material.color = Color.blue; // Change the color of the wall blueprint to blue
             }
         }
-        
+
         // build a wall when the left mouse button is clicked
-        if(Input.GetMouseButtonUp(0) && isWallBuildSelected){
+        if(Input.GetMouseButtonUp(0) && isWallBuildSelected && !isWallDeleteSelected){
             if (EventSystem.current.IsPointerOverGameObject())
             {
                 // Ignore clicks on UI elements
             }
             else if(!corner1Set){
-                StartBuildWall(); // Start building the wall if the first corner is not set
+                StartBuildOrDeleteWall(); // Start building the wall if the first corner is not set
             }else{
                 FinishBuildWall(); // Finish building the wall if the first corner is set
             }
@@ -203,13 +234,11 @@ public class WallBuildController : MonoBehaviour
                 // Ignore clicks on UI elements
             }
             else if(!corner1Set){
-                StartDeleteWall();
+                StartBuildOrDeleteWall();
             }
             else{
                 FinishDeleteWall();
             }
-            
-            
         }
 
         // update wall blueprint position to follow mouse before wall is started to be built or deleted
@@ -225,9 +254,16 @@ public class WallBuildController : MonoBehaviour
                 return; // Exit the method if no tile is hovered
             }
             float wallLength = CalculateWallLength(corner1, corner2);
+            float totalCost = 0f;
             List<GameObject> overlappingWalls = WallsFacingSameDirection(GameVectorMathUtils.CalculateDirection(corner1,corner2), corner2.y + 1.5f); // Get all walls facing the same direction as the new wall
-            float uniqueLength = CalculateUniqueWallLength(corner1, corner2, overlappingWalls); // Calculate the length of the wall
-            float totalCost = CalculateTotalWallCost(uniqueLength, 10f);
+            if(!isWallDeleteSelected){
+                float uniqueLength = CalculateUniqueWallLength(corner1, corner2, overlappingWalls); // Calculate the length of the wall
+                totalCost = CalculateTotalWallCost(uniqueLength, wallCost);
+            }
+            else{
+                float overlapLength = CalculateOverlapLength(corner1, corner2, overlappingWalls); // Calculate the length of the wall
+                totalCost = CalculateTotalWallCost(overlapLength, wallReimbursement); // Calculate the cost of the wall based on the length and cost per unit length
+            }
             UpdateBlueprintPosition(wallLength); // Calculate the total cost of the wall
             wallCostUiElement.text = totalCost.ToString("F1"); // Update the UI element with the cost of the wall
         }
@@ -306,9 +342,8 @@ public class WallBuildController : MonoBehaviour
         }
         return walls; // Return the list of walls facing the same direction
     }
-
-    private float CalculateUniqueWallLength(Vector3 newStart, Vector3 newEnd, List<GameObject> existingWalls){
-
+    private float CalculateOverlapLength(Vector3 newStart, Vector3 newEnd, List<GameObject> existingWalls){
+        
         float totalLength = Vector3.Distance(newStart, newEnd); // Calculate the total length of the new wall
         float overlapLength = 0f; // Initialize the overlap length to zero
         Vector3 wallDirection = GameVectorMathUtils.CalculateDirection(newEnd, newStart); // Calculate the direction of the new wall
@@ -332,12 +367,65 @@ public class WallBuildController : MonoBehaviour
                 overlapLength += overlap; // Add the overlap length to the total overlap length
             }
         }
-        float uniqueLength = Mathf.Max(0, totalLength - overlapLength); // Calculate the unique length of the new wall
+        return overlapLength; // Return the unique length of the new wall
+    }
+    private float CalculateUniqueWallLength(Vector3 newStart, Vector3 newEnd, List<GameObject> existingWalls){
+
+        float totalLength = Vector3.Distance(newStart, newEnd); // Calculate the total length of the new wall
+        float uniqueLength = Mathf.Max(0, totalLength - CalculateOverlapLength(newStart, newEnd, existingWalls)); // Calculate the unique length of the new wall
+        Debug.Log($"Unique Length: {uniqueLength}"); // Log the unique length for debugging purposes
+         // Calculate the unique length of the new wall
         return uniqueLength; // Return the unique length of the new wall
     }
 
-    // need methods to check for overlap between walls and merge the walls together if they do
+    private void TrimWallToExcludeSegment(Vector3 cornerA, Vector3 cornerB, GameObject wallToTrim){
+        if(wallToTrim == null){
+            return; // Exit the method if the wall to trim is null
+        }
 
+        WallDataModel wallData = wallToTrim.GetComponent<WallController>().WallData; // Get the WallDataModel component from the wall to trim
 
+        Vector3 start = wallData.PointA; // Get the start point of the wall to trim
+        Vector3 end = wallData.PointB; // Get the end point of the wall to trim
+        Vector3 wallDirection = GameVectorMathUtils.CalculateDirection(end, start); // Calculate the direction of the wall to trim
 
+        float wallStartScalar = 0f; // start - start
+        float wallEndScalar = Vector3.Dot(wallDirection, end - start);
+        float deleteStartScalar = Vector3.Dot(wallDirection, cornerA - start);
+        float deleteEndScalar = Vector3.Dot(wallDirection, cornerB - start);
+
+        if(wallStartScalar > wallEndScalar)(wallStartScalar, wallEndScalar) = (wallEndScalar, wallStartScalar); // Ensure wallStartScalar is less than wallEndScalar
+        if(deleteStartScalar > deleteEndScalar)(deleteStartScalar, deleteEndScalar) = (deleteEndScalar, deleteStartScalar); // Ensure deleteStartScalar is less than deleteEndScalar
+
+        if(deleteStartScalar <= wallStartScalar && deleteEndScalar >= wallEndScalar){
+            return; // No new wall is created if the wall to trim is completely within the delete segment
+        }
+
+        if(deleteStartScalar > wallStartScalar){
+            Vector3 newStart = start;
+            Vector3 newEnd = start + wallDirection * (deleteStartScalar - wallStartScalar); // Calculate the new end point of the wall to trim
+            CreateWall(newStart, newEnd); // Create a new wall with the updated start and end points
+        }
+
+        if(deleteEndScalar < wallEndScalar){
+            Vector3 newStart = start + wallDirection * (deleteEndScalar - wallStartScalar); // Calculate the new start point of the wall to trim
+            Vector3 newEnd = end;
+            CreateWall(newStart, newEnd); // Create a new wall with the updated start and end points
+        }
+    }
+
+    private void CreateWall(Vector3 start, Vector3 end){
+        if(start == Vector3.zero || end == Vector3.zero){
+            return; // Exit the method if either start or end is zero
+        } 
+        Vector3 direction = GameVectorMathUtils.CalculateDirection(end, start); // Calculate the direction of the wall
+        float wallLength = CalculateWallLength(start, end); // Calculate the length of the wall
+        Vector3 wallMidpoint = (start + end) / 2; // Calculate the midpoint of the wall
+        GameObject wall = Instantiate(wallPrefab, AdjustHeight(wallMidpoint), Quaternion.LookRotation(direction)); // Instantiate the wall prefab at the midpoint between the two corners
+        wall.transform.localScale = new Vector3(0.15f, 3f, wallLength); // Set the scale of the wall based on its length
+        wall.transform.rotation = Quaternion.LookRotation(direction); // Set the rotation of the wall to face the direction
+        WallController wc = wall.AddComponent<WallController>(); // Add the WallController component to the wall
+        wc.Initialise(wall.transform.localScale.z, wall.transform.position, wall.transform.rotation.eulerAngles); // Initialise the WallController with the wall's scale, position, and rotation
+        mapController.AddWall(wall); // Add the wall to the map controller's list of walls
+    }
 }

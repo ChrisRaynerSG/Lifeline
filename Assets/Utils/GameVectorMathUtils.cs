@@ -12,13 +12,11 @@ public static class GameVectorMathUtils{
 
     public static bool AreColinearAndOverlap(Vector3 a1, Vector3 a2, Vector3 b1, Vector3 b2, float tolerance = 1.5f)
     {
-        Debug.Log("entered colinear check");
         Vector3 dirA = (a2 - a1).normalized;
         Vector3 dirB = (b2 - b1).normalized;
 
         // 1. Check if directions are the same (or opposite)
         if (!VectorsAreParallel(dirA, dirB, tolerance)){
-            Debug.Log("directions are not parallel");
             return false;
         }
         // 2. Check if b1 and b2 lie on the same line as a1–a2
@@ -30,7 +28,6 @@ public static class GameVectorMathUtils{
 
         // Check if the cross products are close to zero (indicating colinearity)
         if (cross1.magnitude > tolerance || cross2.magnitude > tolerance){
-            Debug.Log("cross products are not close to zero");
             return false;
         }
 
@@ -44,8 +41,7 @@ public static class GameVectorMathUtils{
         float aMax = Mathf.Max(a1Dot, a2Dot);
         float bMin = Mathf.Min(b1Dot, b2Dot);
         float bMax = Mathf.Max(b1Dot, b2Dot);
-
-        Debug.Log(bMax >= aMin && bMin <= aMax);
+        
         // Check if the projections overlap
         return bMax >= aMin && bMin <= aMax;
     }
@@ -74,7 +70,6 @@ public static class GameVectorMathUtils{
 
         foreach (GameObject wall in candidateWalls)
         {
-            Debug.Log("entered wall loop");
             WallController wc = wall.GetComponent<WallController>();
             if (wc == null) continue;
 
