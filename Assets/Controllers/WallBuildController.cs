@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -50,33 +52,27 @@ public class WallBuildController : MonoBehaviour
             return; // Exit the method if no tile is hovered
         }
 
-        Vector3 direction = corner2 - corner1; // Calculate the direction vector between the two corners
+        Vector3 direction = GameVectorMathUtils.CalculateDirection(corner2,corner1); // Calculate the direction vector between the two corners
         float wallLength = CalculateWallLength(corner1, corner2); // Calculate the length of the wall
-        float totalCost = CalculateTotalWallCost(wallLength, 10f);
+        
+        List<GameObject> sameDirectionWalls = WallsFacingSameDirection(direction); // Get all walls facing the same direction as the new wall
+        
+        GameVectorMathUtils.MergeColinearWalls(corner1, corner2, sameDirectionWalls, out Vector3 newStart, out Vector3 newEnd, out List<GameObject> overlappingWalls); // Merge collinear walls if they overlap
+        foreach(GameObject existingWall in overlappingWalls){
+            Destroy(existingWall); // Destroy the overlapping walls
+            mapController.RemoveWall(existingWall); // Remove the overlapping walls from the map controller's list of walls
+        }
+
+        float totalCost = CalculateTotalWallCost(CalculateUniqueWallLength(newStart,newEnd,overlappingWalls), 10f);
         
         if(totalCost > moneyController.CurrentMoney){
             return; // Exit the method if not enough money to build the wall
         }
+
         // Calculate the total cost of the wall
-        moneyController.SubtractMoney(totalCost); // Subtract money for building the wall
-        
-        List<GameObject> sameDirectionWalls = WallsFacingSameDirection(direction); // Get all walls facing the same direction as the new wall
-        Vector3 newStart = corner1;
-        Vector3 newEnd = corner2;
-
-        foreach(GameObject existingWall in sameDirectionWalls){
-            WallController wcLoop = existingWall.GetComponent<WallController>();
-            Vector3 start = wcLoop.WallData.PointA;
-            Vector3 end = wcLoop.WallData.PointB;
-            if(GameVectorMathUtils.AreColinearAndOverlap(newStart, newEnd, start, end)){
-                newStart = Vector3.Min(newStart, start); // Update the start point to the minimum of the two
-                newEnd = Vector3.Max(newEnd, end); // Update the end point to the maximum of the two
-                Destroy(existingWall); // Destroy the existing wall if it overlaps with the new wall
-                mapController.RemoveWall(existingWall); // Remove the existing wall from the map controller's list of walls                
-            }
-        }
-
-        Vector3 mergedDirection = newEnd - newStart;
+        moneyController.SubtractMoney(totalCost); 
+    
+        Vector3 mergedDirection = GameVectorMathUtils.CalculateDirection(newEnd, newStart);
         float mergedLength = CalculateWallLength(newStart, newEnd); // Calculate the length of the merged wall
         Vector3 mergedMidpoint = (newStart + newEnd) / 2; // Calculate the midpoint of the merged wall
 
@@ -93,6 +89,7 @@ public class WallBuildController : MonoBehaviour
         //Clean up after wall is built
         // need to reset the wall blueprint to just be 1x1
         wallBlueprint.transform.localScale = new Vector3(0.15f, 3f, 0.15f); // Reset the scale of the wall blueprint
+        
         corner1Set = false;
         corner1 = Vector3.zero; // Reset the first corner to zero
         corner2 = Vector3.zero; // Reset the second corner to zero
@@ -228,7 +225,7 @@ public class WallBuildController : MonoBehaviour
                 return; // Exit the method if no tile is hovered
             }
             float wallLength = CalculateWallLength(corner1, corner2);
-            List<GameObject> overlappingWalls = WallsFacingSameDirection((corner1-corner2).normalized);
+            List<GameObject> overlappingWalls = WallsFacingSameDirection(GameVectorMathUtils.CalculateDirection(corner1,corner2));
             float uniqueLength = CalculateUniqueWallLength(corner1, corner2, overlappingWalls); // Calculate the length of the wall
             float totalCost = CalculateTotalWallCost(uniqueLength, 10f);
             UpdateBlueprintPosition(wallLength); // Calculate the total cost of the wall
@@ -251,7 +248,7 @@ public class WallBuildController : MonoBehaviour
         if (wallBlueprint != null && corner1Set && isBuildingWall)
         {
             // Update the position, rotation, and scale of the blueprint
-            Vector3 direction = corner2 - corner1;
+            Vector3 direction = GameVectorMathUtils.CalculateDirection(corner2 , corner1);
             wallBlueprint.transform.position = AdjustHeight((corner1 + corner2) / 2);
             wallBlueprint.transform.localScale = new Vector3(0.15f, 3f, wallLength);
             wallBlueprint.transform.rotation = Quaternion.LookRotation(direction);
@@ -303,7 +300,7 @@ public class WallBuildController : MonoBehaviour
         List<GameObject> walls = new List<GameObject>();
         foreach(GameObject wall in mapController.builtWalls){
             WallController wc = wall.GetComponent<WallController>();
-            if(wc != null && (wc.WallData.Direction == direction || wc.WallData.Direction == -direction)){
+            if(wc != null && GameVectorMathUtils.VectorsAreParallel(wc.WallData.Direction, direction)){
                 walls.Add(wall); // Add the wall to the list if it is facing the same direction
             }
         }
@@ -314,7 +311,7 @@ public class WallBuildController : MonoBehaviour
 
         float totalLength = Vector3.Distance(newStart, newEnd); // Calculate the total length of the new wall
         float overlapLength = 0f; // Initialize the overlap length to zero
-        Vector3 wallDirection = (newEnd - newStart).normalized; // Calculate the direction of the new wall
+        Vector3 wallDirection = GameVectorMathUtils.CalculateDirection(newEnd, newStart); // Calculate the direction of the new wall
 
         foreach(GameObject existingWall in existingWalls){
             WallController wc = existingWall.GetComponent<WallController>();
