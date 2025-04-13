@@ -106,25 +106,34 @@ public class WallBuildController : MonoBehaviour
         if(sameDirectionWalls.Count == 0){
             return; // Exit the method if no walls facing the same direction are found cant delete walls if they dont exist
         }
-        GameObject wallToDelete = null;
+
+        List<GameObject> wallsToDelete = new List<GameObject>(); // Initialize the wall to delete to an empty list
         foreach(GameObject wall in sameDirectionWalls){
             WallController wc = wall.GetComponent<WallController>();
             if(wc != null && GameVectorMathUtils.AreColinearAndOverlap(corner1, corner2, wc.WallData.PointA, wc.WallData.PointB)){
-                wallToDelete = wall; // Set the wall to delete to the one that overlaps with the new wall
-                break;
+                wallsToDelete.Add(wall); // Set the wall to delete to the one that overlaps with the new wall
             }
         }
 
-        if(wallToDelete == null || CalculateOverlapLength(corner1, corner2, sameDirectionWalls) == 0){
+        if(wallsToDelete.Count == 0 || CalculateOverlapLength(corner1, corner2, sameDirectionWalls) == 0){
             return; // Exit the method if no wall to delete is found or there is no overlap
         }
 
         moneyController.AddMoney(CalculateTotalWallCost(CalculateOverlapLength(corner1, corner2, sameDirectionWalls), wallReimbursement)); // Add money for deleting the wall 5f per unit length so half the cost of building a wall
-        TrimWallToExcludeSegment(corner1, corner2, wallToDelete); // Calculate the new walls from the deleted wall
-        
-        mapController.RemoveWall(wallToDelete); 
-        Destroy(wallToDelete); // Destroy the wall to delete
 
+        foreach(GameObject wallToDelete in wallsToDelete){
+            TrimWallToExcludeSegment(corner1, corner2, wallToDelete);
+            mapController.RemoveWall(wallToDelete); 
+            Destroy(wallToDelete); // Destroy the wall to delete
+        }
+        //final cleanup to remove single space walls
+        foreach(GameObject wall in mapController.builtWalls){
+            if(wall.transform.localScale.z < 0.1444f){
+                mapController.RemoveWall(wall);
+                Destroy(wall); // Destroy the wall if it is less than 0.1444f in length
+            }
+        }
+        
         isBuildingWall = false;
 
         wallBlueprint.transform.localScale = new Vector3(0.15f, 3f, 0.15f); 
