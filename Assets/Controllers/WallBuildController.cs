@@ -48,7 +48,7 @@ public class WallBuildController : MonoBehaviour
     }
 
     public void StartBuildOrDeleteWall(){
-        if(!isWallBuildSelected){
+        if(!isWallBuildSelected && !isWallDeleteSelected){
             return; // Exit the method if wall build mode is not selected
         }
         corner1 = SetClosestCorner();
@@ -216,6 +216,7 @@ public class WallBuildController : MonoBehaviour
                 ToggleWallBuildMode(); // Toggle the wall build mode
             }
         }
+        
         if(Input.GetMouseButtonUp(1) && isBuildingWall){
             Vector3 currentMousePosition = Input.mousePosition; // Get the current mouse position
             Vector3 mouseDelta = currentMousePosition - initialMousePosition; // Calculate the difference between the current and initial mouse positions
@@ -227,7 +228,7 @@ public class WallBuildController : MonoBehaviour
             }
         }
 
-        if(isWallBuildSelected){
+        // if(isWallBuildSelected){
             if(Input.GetKeyDown(KeyCode.LeftControl)){
                 // change wall build mode to delete mode
                 if(!isWallDeleteSelected){
@@ -236,7 +237,7 @@ public class WallBuildController : MonoBehaviour
                     wallBlueprint.GetComponent<MeshRenderer>().material.color = Color.red; // Change the color of the wall blueprint to red
                 }
             }
-        }
+        //}
 
         if(isWallDeleteSelected){
             if(Input.GetKeyUp(KeyCode.LeftControl)){
@@ -259,8 +260,7 @@ public class WallBuildController : MonoBehaviour
                 FinishBuildWall(); // Finish building the wall if the first corner is set
             }
         }
-
-        if(Input.GetMouseButtonUp(0) && (isWallDeleteSelected || isWallDeleteNonControlSelected)){
+        else if(Input.GetMouseButtonUp(0) && (isWallDeleteSelected)){
             if (EventSystem.current.IsPointerOverGameObject())
             {
                 // Ignore clicks on UI elements
