@@ -25,7 +25,8 @@ public class MapController : MonoBehaviour, IMapController
     }
     public GameObject tilePrefab; // Prefab for the tiles in the map
     public GameObject[,,] tilePrefabs;
-    public List<GameObject> builtWalls = new List<GameObject>(); // List to store built walls
+    public List<GameObject> builtWalls = new List<GameObject>();
+    public List<GameObject> rooms = new List<GameObject>(); // List to store built walls
     public GameObject buildGrid;
 
     public int mapWidth;
@@ -233,5 +234,10 @@ public class MapController : MonoBehaviour, IMapController
         // Remove a wall from the list of built walls
         builtWalls.Remove(wall); // Remove the wall from the list of built walls
         Destroy(wall); // Destroy the wall object
+    }
+
+    public List<GameObject> GetWalls(){
+        // Return the list of built walls
+        return builtWalls; // Return the list of built walls
     }
 }

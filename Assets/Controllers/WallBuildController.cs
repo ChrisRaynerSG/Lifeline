@@ -102,6 +102,8 @@ public class WallBuildController : MonoBehaviour
 
         // Create the new wall with the updated start and end points
         wallBuilder.CreateWall(newStart, newEnd); // Create the new wall with the updated start and end points
+        wallBuilder.SplitIntersectingWalls(); // Split any intersecting walls
+
         isBuildingWall = false; // Reset the flag to indicate that we are no longer building a wall
         
         //Clean up after wall is built

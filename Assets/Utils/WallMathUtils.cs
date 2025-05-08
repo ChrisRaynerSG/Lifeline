@@ -52,4 +52,65 @@ public static class WallMathUtils{
         float uniqueLength = Mathf.Max(0, totalLength - CalculateOverlapLength(newStart, newEnd, existingWalls)); // Calculate the unique length of the new wall
         return uniqueLength; // Return the unique length of the new wall
     }
+
+    public static Vector3 CalculateIntersectionPoint(WallController wallA, WallController wallB)
+    {
+        Vector3 aStart3D = wallA.WallData.PointA;
+        Vector3 aEnd3D = wallA.WallData.PointB;
+        Vector3 bStart3D = wallB.WallData.PointA;
+        Vector3 bEnd3D = wallB.WallData.PointB;
+
+        Vector2 aStart = new Vector2(aStart3D.x, aStart3D.z);
+        Vector2 aEnd = new Vector2(aEnd3D.x, aEnd3D.z);
+        Vector2 bStart = new Vector2(bStart3D.x, bStart3D.z);
+        Vector2 bEnd = new Vector2(bEnd3D.x, bEnd3D.z);
+
+        Vector2 intersection;
+        if (TryGet2DLineIntersection(aStart, aEnd, bStart, bEnd, out intersection))
+        {
+            return new Vector3(intersection.x, wallA.WallData.Position.y, intersection.y);
+        }
+
+        return Vector3.zero;
+    }
+    private static bool TryGet2DLineIntersection(Vector2 p1, Vector2 p2, Vector2 q1, Vector2 q2, out Vector2 intersection)
+    {
+        intersection = Vector2.zero;
+
+        Vector2 r = p2 - p1;
+        Vector2 s = q2 - q1;
+
+        float denominator = r.x * s.y - r.y * s.x;
+        if (Mathf.Approximately(denominator, 0f))
+            return false; // Lines are parallel
+
+        Vector2 qp = q1 - p1;
+        float t = (qp.x * s.y - qp.y * s.x) / denominator;
+        float u = (qp.x * r.y - qp.y * r.x) / denominator;
+
+        if (t >= 0 && t <= 1 && u >= 0 && u <= 1)
+        {
+            intersection = p1 + t * r;
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool IsPointBetween(Vector3 point, Vector3 start, Vector3 end)
+    {
+        Vector2 p = new Vector2(point.x, point.z);
+        Vector2 a = new Vector2(start.x, start.z);
+        Vector2 b = new Vector2(end.x, end.z);
+
+        // Allow a small margin of error
+        const float epsilon = 0.01f;
+
+        float lengthAB = Vector2.Distance(a, b);
+        float lengthAP = Vector2.Distance(a, p);
+        float lengthPB = Vector2.Distance(p, b);
+
+        // If the sum of the parts is almost the same as the whole, it's between
+        return Mathf.Abs((lengthAP + lengthPB) - lengthAB) < epsilon;
+    }
 }

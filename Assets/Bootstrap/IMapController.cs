@@ -4,6 +4,7 @@ public interface IMapController{
 
     void AddWall(GameObject wall); // Method to add a wall to the map controller's list of walls
     void RemoveWall(GameObject wall); // Method to remove a wall from the map controller's list of walls
+    List<GameObject> GetWalls(); // Method to get the list of walls in the map controller
 
     GameObject GetTileAtMousePosition(); // Method to get the tile at the mouse position
     void GoUpFloor();
