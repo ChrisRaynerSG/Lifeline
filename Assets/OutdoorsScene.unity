@@ -1104,6 +1104,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   tilePrefab: {fileID: 4023597100052281838, guid: 7339317cd3c2b294e908d9a665d737fc, type: 3}
+  builtWalls: []
   buildGrid: {fileID: 1979050069}
   mapWidth: 20
   mapHeight: 3
@@ -2053,6 +2054,8 @@ MonoBehaviour:
   wallPrefab: {fileID: 8335464628839718425, guid: 7c994ab420237ac4d9907a7038528094, type: 3}
   wallBlueprintPrefab: {fileID: 8335464628839718425, guid: 7c994ab420237ac4d9907a7038528094, type: 3}
   wallCostUiElement: {fileID: 1481018883}
+  wallCost: 10
+  wallReimbursement: 5
 --- !u!1 &887108882
 GameObject:
   m_ObjectHideFlags: 0

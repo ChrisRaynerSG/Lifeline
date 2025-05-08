@@ -8,7 +8,7 @@ using UnityEngine.Tilemaps;
 /// This class is responsible for generating a map of tiles in the game.
 /// It creates a grid of tiles based on the specified width and height.
 /// /// </summary>
-public class MapController : MonoBehaviour
+public class MapController : MonoBehaviour, IMapController
 {
     public static MapController Instance { get; private set; } // Singleton instance of the MapController
     public static event Action<float> percentMapGenerated;
